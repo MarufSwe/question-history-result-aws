@@ -1,0 +1,93 @@
+service: practice-api
+
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: python3.8
+  stage: dev
+  region: us-east-1
+  memorySize: 128
+  environment:
+    graphql_api_url: { Fn::GetAtt: [ GraphQlApi, GraphQLUrl ] }
+    aws_region: {Ref: AWS::Region}
+    dynamodb_table: 'practiceApiTable'
+  iam:
+    role:
+      statements:
+        - Effect: 'Allow'
+          Action:
+            - 'dynamodb:PutItem'
+            - 'dynamodb:BatchWriteItem'
+            - 'dynamodb:UpdateItem'
+            - 'dynamodb:DeleteItem'
+            - 'dynamodb:GetItem'
+            - 'dynamodb:Query'
+            - 'dynamodb:Scan'
+            - 's3:PutObject'
+          Resource: "*"
+
+plugins:
+  - serverless-appsync-plugin
+
+functions:
+  apiPracticeFunc:
+    handler: handler/handler.lambda_handler
+    name: api_practice_func
+
+
+resources:
+  Resources:
+    demo:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: practiceApiTable
+        AttributeDefinitions:
+          - AttributeName: PK
+            AttributeType: S
+          - AttributeName: SK
+            AttributeType: S
+        KeySchema:
+          - AttributeName: PK # partition key
+            KeyType: HASH
+          - AttributeName: SK # sort key
+            KeyType: RANGE
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+
+
+custom:
+  projectName: practice_api
+  # customBucketName: savvy-backend-resource-bucket
+  appSync:
+    name: ${self:custom.projectName}_appsync
+    # authenticationType: API_KEY
+    authenticationType: API_KEY
+    # additionalAuthenticationProviders:
+    #   - authenticationType: API_KEY
+    #   - authenticationType: AMAZON_COGNITO_USER_POOLS
+    #     userPoolConfig:
+    #       awsRegion: us-east-1
+    #       userPoolId: ${self:provider.environment.user_pool_id}
+    mappingTemplates:
+
+      #for result history api
+      - type: Mutation
+        field: createHistory
+        dataSource: create_demoPythonDataSource
+        request: false
+        response: false
+
+    dataSources:
+      - type: AWS_LAMBDA
+        name: create_demoPythonDataSource
+        config:
+          functionName: apiPracticeFunc
+
+
+          # sls deploy
+          # sls logs --function [function name ]
+          # sls deploy function --function demoApp
+          # sls info
+          # da2-fqpvbosgh5a3jkqxpnduf7miqi //api_key

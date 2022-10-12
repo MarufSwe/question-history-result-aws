@@ -1,0 +1,28 @@
+
+#for result history api
+input createUserQuestionHistory {
+    stageSortKey: String
+}
+
+type Message {
+    message: String
+}
+
+type Mutation {
+    createHistory(input:createUserQuestionHistory): Message
+}
+
+type Query {
+    getMessage: Message
+}
+
+schema {
+    query: Query
+    mutation: Mutation
+}
+
+
+
+
+
+
